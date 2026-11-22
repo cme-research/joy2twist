@@ -4,7 +4,8 @@ namespace joy2twist
 {
 using std::placeholders::_1;
 
-Joy2TwistNode::Joy2TwistNode() : Node("joy2twist_node")
+Joy2TwistNode::Joy2TwistNode(const rclcpp::NodeOptions & options)
+: Node("joy2twist_node", options)
 {
   using namespace std::placeholders;
 
@@ -167,15 +168,30 @@ void Joy2TwistNode::joy_cb(const MsgJoy::SharedPtr joy_msg)
   MsgTwist twist_msg;
 
   handle_x_input_check(joy_msg);
-  handle_e_stop(joy_msg);
 
-  if (get_joy_input_as_btn(joy_msg, input_index_.dead_man_switch)) {
-    driving_mode_ = true;
-    convert_joy_to_twist(joy_msg, twist_msg);
-    publish_twist(twist_msg);
-  } else if (driving_mode_) {
-    driving_mode_ = false;
-    publish_twist(twist_msg);
+  try {
+    handle_e_stop(joy_msg);
+
+    if (get_joy_input_as_btn(joy_msg, input_index_.dead_man_switch)) {
+      driving_mode_ = true;
+      convert_joy_to_twist(joy_msg, twist_msg);
+      publish_twist(twist_msg);
+    } else if (driving_mode_) {
+      driving_mode_ = false;
+      publish_twist(twist_msg);
+    }
+  } catch (const std::out_of_range &) {
+    // The joy message has fewer axes/buttons than the input_index_map expects
+    // (e.g. a non X-Input gamepad). Previously the exception escaped the
+    // callback and terminated the node; stop the robot and keep running.
+    RCLCPP_WARN_THROTTLE(
+      this->get_logger(), *this->get_clock(), 1000,
+      "Joy message has %zu axes / %zu buttons, fewer than input_index_map requires; ignoring.",
+      joy_msg->axes.size(), joy_msg->buttons.size());
+    if (driving_mode_) {
+      driving_mode_ = false;
+      publish_twist(MsgTwist());
+    }
   }
 }
 

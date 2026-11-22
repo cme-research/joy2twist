@@ -58,7 +58,7 @@ struct InputIndex
 class Joy2TwistNode : public rclcpp::Node
 {
 public:
-  Joy2TwistNode();
+  explicit Joy2TwistNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 private:
   void declare_parameters();
@@ -87,10 +87,12 @@ private:
   std::map<std::string, float> angular_velocity_factors_;
 
   InputIndex input_index_;
-  bool driving_mode_;
-  bool e_stop_present_;
-  bool e_stop_state_;
-  bool cmd_vel_stamped_;
+  bool driving_mode_{false};
+  bool e_stop_present_{false};
+  // Unknown until the first e-stop message arrives; must not start as "engaged",
+  // otherwise the trigger button would skip the stop command.
+  bool e_stop_state_{false};
+  bool cmd_vel_stamped_{false};
   std::string cmd_vel_topic_;
   std::string e_stop_topic_;
   std::string e_stop_reset_srv_;
