@@ -45,6 +45,16 @@ install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME}/)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_joy2twist
+    test/test_joy2twist.cpp src/joy2twist_node.cpp src/joy_input.cpp
+    TIMEOUT 120)
+  target_include_directories(test_joy2twist PRIVATE include)
+  target_compile_definitions(test_joy2twist PRIVATE
+    JOY2TWIST_CONFIG_DIR="${CMAKE_CURRENT_SOURCE_DIR}/config")
+  ament_target_dependencies(test_joy2twist
+    rclcpp geometry_msgs sensor_msgs std_msgs std_srvs diagnostic_updater)
 endif()
 
 ament_export_include_directories(include)
