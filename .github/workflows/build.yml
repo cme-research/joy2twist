@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - jazzy
+      - jazzy_dev
 
 jobs:
   build-and-test:
@@ -23,3 +24,11 @@ jobs:
           skip-tests: false
           rosdep-check: true
           package-name: joy2twist
+          # Run real tests; ament linters (ctest label / pytest marker "linter") are excluded.
+          colcon-defaults: |
+            {
+              "test": {
+                "ctest-args": ["-LE", "linter"],
+                "pytest-args": ["-m", "not linter"]
+              }
+            }
